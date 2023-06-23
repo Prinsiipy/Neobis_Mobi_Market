@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
 
-from .models import User, VerifyPhone
+from .models import User, VerifyPhone, Product, Favorite
 
 
 def validate_password_characters(value):
@@ -91,3 +91,37 @@ class SendCodeSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username',)
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    like_count = serializers.SerializerMethodField()
+    likes = LikeSerializer(read_only=True, many=True)
+
+    class Meta:
+        model = Product
+        fields = ["id", "like_count", "name", "price", "photo", "description", "owner", "likes"]
+        read_only_fields = ('id', 'owner', 'like_count')
+
+    def get_like_count(self, obj):
+        return obj.like_count
+
+
+class FavoriteCustomUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username',)
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    user = FavoriteCustomUserSerializer(read_only=True)
+
+    class Meta:
+        model = Favorite
+        fields = ['id', 'user', 'product', 'timestamp']
+        read_only_fields = ('user',)
